@@ -52,6 +52,14 @@ function cariIndexGitarById(idCari: string): number {
   );
 }
 
+// Fungsi berparameter dengan return objek Gitar atau undefined untuk mencari data gitar berdasarkan ID
+function cariGitarById(idCari: string): Gitar | undefined {
+  // Menggunakan method array find untuk mengambil objek gitar yang ID-nya cocok (case-insensitive)
+  return daftarGitar.find(
+    (item: Gitar) => item.id.toLowerCase() === idCari.trim().toLowerCase()
+  );
+}
+
 // Fungsi berparameter dengan return hasil hitung aritmatika untuk menghitung total nilai aset stok
 function hitungTotalNilaiStok(hargaSatuan: number, jumlahStok: number): number {
   // Mengalikan harga satuan dengan jumlah stok menggunakan operator aritmatika perkalian
@@ -72,17 +80,96 @@ function tampilkanRingkasanGitar(): void {
 
   // Menggunakan perulangan for...of untuk menelusuri seluruh elemen array daftarGitar
   for (const gitar of daftarGitar) {
-    // Menentukan label status menggunakan operator perbandingan lebih dari
-    const labelStatus: string = gitar.stok > 0 ? "Tersedia" : "Habis";
+    // Menentukan label status menggunakan properti boolean tersedia
+    const labelStatus: string = gitar.tersedia ? "Tersedia" : "Habis";
     console.log(
-      `[${gitar.id}] ${gitar.nama} (${gitar.kategori}) - Rp${gitar.harga.toLocaleString("id-ID")} | Stok: ${gitar.stok} (${labelStatus})`
+      `[${gitar.id}] ${gitar.nama} | Merek: ${gitar.merek} (${gitar.kategori}) - Rp${gitar.harga.toLocaleString("id-ID")} | Stok: ${gitar.stok} | Tersedia: ${gitar.tersedia} (${labelStatus})`
     );
   }
   console.log("-----------------------------");
 }
 
 // ============================================================================
-// BAGIAN 3: FITUR UTAMA - UPDATE & DELETE
+// BAGIAN 3: FITUR UTAMA - READ (TAMPIL SEMUA & DETAIL BERDASARKAN ID)
+// ============================================================================
+
+// Fungsi tanpa parameter dan tanpa return untuk menampilkan seluruh data gitar secara lengkap
+function tampilkanSemuaGitar(): void {
+  console.log("\n=== DAFTAR SELURUH DATA GITAR (READ ALL) ===");
+
+  // Memeriksa kasus tepi apabila array data gitar masih kosong
+  if (daftarGitar.length === 0) {
+    console.log("[Info] Data gitar masih kosong. Belum ada data yang tersimpan.");
+    return;
+  }
+
+  // Variabel penampung total unit stok seluruh gitar
+  let totalUnitKeseluruhan: number = 0;
+
+  // Menggunakan method forEach untuk menampilkan setiap data gitar beserta indeks urutnya
+  daftarGitar.forEach((gitar: Gitar, index: number) => {
+    const nomorUrut: number = index + 1;
+    const labelStatus: string = gitar.tersedia ? "Tersedia" : "Habis";
+    totalUnitKeseluruhan += gitar.stok;
+
+    console.log(
+      `${nomorUrut}. [${gitar.id}] ${gitar.nama} | Merek: ${gitar.merek} | Kategori: ${gitar.kategori} | Harga: Rp${gitar.harga.toLocaleString("id-ID")} | Stok: ${gitar.stok} unit | Status Tersedia: ${gitar.tersedia} (${labelStatus})`
+    );
+  });
+
+  console.log("--------------------------------------------");
+  console.log(`Total Model Gitar : ${daftarGitar.length} jenis`);
+  console.log(`Total Seluruh Stok: ${totalUnitKeseluruhan} unit`);
+}
+
+// Fungsi untuk menampilkan detail lengkap 1 data gitar berdasarkan pencarian ID
+async function tampilkanDetailGitarById(): Promise<void> {
+  console.log("\n=== DETAIL DATA GITAR BERDASARKAN ID (READ DETAIL) ===");
+
+  // Memeriksa kasus tepi apabila array data gitar masih kosong
+  if (daftarGitar.length === 0) {
+    console.log("[Info] Data gitar masih kosong. Tidak ada data yang dapat dicari.");
+    return;
+  }
+
+  // Meminta input ID gitar dari pengguna
+  const inputId: string = (await tanya("Masukkan ID Gitar yang ingin dilihat detailnya (contoh: GTR-01): ")).trim();
+
+  // Validasi agar input ID tidak kosong
+  if (inputId === "") {
+    console.log("[Peringatan] ID gitar tidak boleh kosong.");
+    return;
+  }
+
+  // Mencari data gitar menggunakan fungsi berbasis .find() dan posisi indeksnya dengan .findIndex()
+  const gitarDitemukan: Gitar | undefined = cariGitarById(inputId);
+  const posisiIndex: number = cariIndexGitarById(inputId);
+
+  // Mengecek apakah data gitar ditemukan
+  if (gitarDitemukan === undefined || posisiIndex === -1) {
+    console.log(`[Error] Gitar dengan ID "${inputId}" tidak ditemukan.`);
+    return;
+  }
+
+  // Menghitung total nilai aset untuk stok gitar tersebut
+  const totalNilaiAset: number = hitungTotalNilaiStok(gitarDitemukan.harga, gitarDitemukan.stok);
+  const keteranganStatus: string = gitarDitemukan.tersedia ? "Tersedia (Siap Dijual)" : "Habis (Stok Kosong)";
+
+  // Menampilkan seluruh atribut data gitar secara lengkap
+  console.log("\nDetail Lengkap Data Gitar:");
+  console.log(`- Posisi Data     : Data ke-${posisiIndex + 1} dari ${daftarGitar.length}`);
+  console.log(`- ID Gitar        : ${gitarDitemukan.id}`);
+  console.log(`- Nama Model      : ${gitarDitemukan.nama}`);
+  console.log(`- Merek           : ${gitarDitemukan.merek}`);
+  console.log(`- Kategori        : ${gitarDitemukan.kategori}`);
+  console.log(`- Harga Satuan    : Rp${gitarDitemukan.harga.toLocaleString("id-ID")}`);
+  console.log(`- Jumlah Stok     : ${gitarDitemukan.stok} unit`);
+  console.log(`- Status Tersedia : ${gitarDitemukan.tersedia} (${keteranganStatus})`);
+  console.log(`- Total Nilai Aset: Rp${totalNilaiAset.toLocaleString("id-ID")}`);
+}
+
+// ============================================================================
+// BAGIAN 4: FITUR UTAMA - UPDATE & DELETE
 // ============================================================================
 
 // Fungsi untuk mengubah data gitar yang sudah ada berdasarkan ID
@@ -113,6 +200,7 @@ async function updateGitar(): Promise<void> {
     console.log(`- Kategori : ${gitarLama.kategori}`);
     console.log(`- Harga    : Rp${gitarLama.harga.toLocaleString("id-ID")}`);
     console.log(`- Stok     : ${gitarLama.stok} unit`);
+    console.log(`- Tersedia : ${gitarLama.tersedia}`);
     console.log("\n(Tekan ENTER langsung jika tidak ingin mengubah kolom tersebut)");
 
     // 1. Input nama baru dan lewati jika kosong
@@ -170,7 +258,7 @@ async function updateGitar(): Promise<void> {
     if (inputStok !== "") {
       const selisihStok: number = Number(inputStok);
       // Memvalidasi apakah input angka sah menggunakan operator logika NOT
-      if (!isNaN(selisihStok)) {
+      if (!isNaN(selisihStok) && Number.isInteger(selisihStok)) {
         // Mengecek apakah perubahan menambah atau mengurangi stok
         if (selisihStok >= 0) {
           // Menambah stok menggunakan operator compound penjumlahan
@@ -187,7 +275,7 @@ async function updateGitar(): Promise<void> {
           }
         }
       } else {
-        console.log("[Error] Input stok harus berupa angka valid! Stok lama dipertahankan.");
+        console.log("[Error] Input stok harus berupa bilangan bulat valid! Stok lama dipertahankan.");
       }
     }
 
@@ -236,6 +324,7 @@ async function deleteGitar(): Promise<void> {
   console.log(`- Nama     : ${targetGitar.nama} (${targetGitar.merek})`);
   console.log(`- Kategori : ${targetGitar.kategori}`);
   console.log(`- Stok     : ${targetGitar.stok} unit (Nilai Aset: Rp${estimasiAset.toLocaleString("id-ID")})`);
+  console.log(`- Tersedia : ${targetGitar.tersedia}`);
 
   // Variabel kontrol untuk perulangan validasi konfirmasi
   let konfirmasiValid: boolean = false;
@@ -264,7 +353,7 @@ async function deleteGitar(): Promise<void> {
 }
 
 // ============================================================================
-// BAGIAN 4: MENU UTAMA PENGUJIAN UPDATE & DELETE
+// BAGIAN 5: MENU UTAMA PENGUJIAN READ, UPDATE & DELETE
 // ============================================================================
 
 // Fungsi utama untuk menjalankan menu pengujian secara berulang
@@ -274,25 +363,29 @@ async function jalankanMenuPengujian(): Promise<void> {
 
   // Perulangan while utama untuk menjaga menu tetap berjalan sampai pengguna memilih keluar
   while (sedangBerjalan) {
-    console.log("\n========================================");
-    console.log("   SISTEM MANAJEMEN TOKO GITAR (U & D)  ");
-    console.log("========================================");
-    console.log("1. Lihat Ringkasan Data Gitar");
-    console.log("2. Ubah Data Gitar (Update)");
-    console.log("3. Hapus Data Gitar (Delete)");
+    console.log("\n============================================");
+    console.log("  SISTEM MANAJEMEN TOKO GITAR (R, U & D)   ");
+    console.log("============================================");
+    console.log("1. Lihat Semua Data Gitar (Read All)");
+    console.log("2. Lihat Detail Gitar berdasarkan ID (Read Detail)");
+    console.log("3. Ubah Data Gitar (Update)");
+    console.log("4. Hapus Data Gitar (Delete)");
     console.log("0. Keluar");
 
-    const pilihanMenu: string = (await tanya("Pilih menu (0-3): ")).trim();
+    const pilihanMenu: string = (await tanya("Pilih menu (0-4): ")).trim();
 
     // Seleksi kondisi switch untuk mengarahkan pilihan menu pengguna
     switch (pilihanMenu) {
       case "1":
-        tampilkanRingkasanGitar();
+        tampilkanSemuaGitar();
         break;
       case "2":
-        await updateGitar();
+        await tampilkanDetailGitarById();
         break;
       case "3":
+        await updateGitar();
+        break;
+      case "4":
         await deleteGitar();
         break;
       case "0": {
@@ -324,7 +417,7 @@ async function jalankanMenuPengujian(): Promise<void> {
         break;
       }
       default:
-        console.log("[Error] Pilihan menu tidak valid! Silakan masukkan angka 0 sampai 3.");
+        console.log("[Error] Pilihan menu tidak valid! Silakan masukkan angka 0 sampai 4.");
         break;
     }
   }
